@@ -54,11 +54,8 @@ jobs:
             git clone https://github.com/zonble/zago.git /tmp/zago
             cd /tmp/zago
             swift build -c release --static-swift-stdlib
-            cp .build/release/zago /workspace/zago
-            cp LICENSE /workspace/LICENSE
-            cp README.md /workspace/README.md
+            tar -czf /workspace/zago-linux-x86_64.tar.gz -C .build/release zago -C /tmp/zago LICENSE README.md
           "
-          tar -czf zago-linux-x86_64.tar.gz zago LICENSE README.md
 
       - name: Calculate SHA256 of the new binary
         if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
@@ -111,7 +108,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add PKGBUILD .SRCINFO LICENSE README.md
+          git add PKGBUILD .SRCINFO
           git commit -m "chore: release v${{ steps.upstream.outputs.version }}"
           git push origin main
 
