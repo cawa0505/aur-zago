@@ -9,7 +9,7 @@ pkgbase = zago-bin
 	depends = glibc
 	provides = zago
 	conflicts = zago
-	source_x86_64 = https://github.com/cawa0505/aur-zago/releases/download/v1.0.2/zago-linux-x86_64.tar.gz
+	source_x86_64 = zago-1.0.2-linux-x86_64.tar.gz::https://github.com/cawa0505/aur-zago/releases/download/v1.0.2/zago-linux-x86_64.tar.gz
 	sha256sums_x86_64 = 17823664be517e1d4de936c55c7a59f831945d2aa3bba383beb45ec364d29916
 
 pkgname = zago-bin
