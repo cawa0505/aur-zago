@@ -20,12 +20,11 @@ jobs:
       - name: Get latest zago upstream version
         id: upstream
         run: |
-          # Fetch latest tag or commit from upstream
-          UPSTREAM_TAG=$(curl -s "https://api.github.com/repos/zonble/zago/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+          # Fetch latest tag from upstream (prefer tags over releases since upstream has no release assets)
+          UPSTREAM_TAG=$(curl -s "https://api.github.com/repos/zonble/zago/tags" | grep '"name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
           if [ -z "$UPSTREAM_TAG" ] || [ "$UPSTREAM_TAG" = "null" ]; then
-            # If no release, use commit count or latest commit
+            # If no tags, use latest commit
             UPSTREAM_COMMIT=$(curl -s "https://api.github.com/repos/zonble/zago/commits/main" | grep '"sha":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
-            # We construct a synthetic version based on date and commit
             COMMIT_DATE=$(curl -s "https://api.github.com/repos/zonble/zago/commits/main" | grep '"date":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' | cut -d'T' -f1 | tr -d '-')
             UPSTREAM_VERSION="0.1.0.r${COMMIT_DATE}.${UPSTREAM_COMMIT:0:7}"
           else
