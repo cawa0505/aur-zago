@@ -15,6 +15,7 @@ The automation workflow resides in `.github/workflows/release.yml` and triggers 
 
 1. **Upstream Checking**: Query GitHub Tags endpoint (not Releases, since upstream publishes tags without release assets) to determine the latest version.
 2. **Dockerized Build**: Spawns a clean `swift:6.0` container to compile the upstream source code.
-3. **Metadata Updates**: Updates `pkgver` and `sha256sums_x86_64` inside `PKGBUILD`, and uses an `archlinux:latest` container to print a clean `.SRCINFO`.
-4. **Release Assets**: Uploads the precompiled `tar.gz` to local GitHub Releases under tag `v<version>`.
-5. **AUR Submission**: Clones `ssh://aur@aur.archlinux.org/zago-bin.git` using SSH credentials, updates metadata files, and pushes to the AUR.
+3. **Workspace Isolation (CRITICAL)**: Build outputs must be compressed inside the Docker container directly to prevent local files (like package-specific `README.md` and `LICENSE`) from being overwritten by upstream files on the runner host.
+4. **Metadata Updates**: Updates `pkgver` and `sha256sums_x86_64` inside `PKGBUILD`, and uses an `archlinux:latest` container to print a clean `.SRCINFO`.
+5. **Release Assets**: Uploads the precompiled `tar.gz` to local GitHub Releases under tag `v<version>`.
+6. **AUR Submission**: Clones `ssh://aur@aur.archlinux.org/zago-bin.git` using SSH credentials, updates metadata files, and pushes to the AUR.
