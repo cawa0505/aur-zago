@@ -1,17 +1,15 @@
-pkgbase = zago-git
-	pkgdesc = A Lean Terminal Forge for Markdown Writers
-	pkgver = 0.1.0.r45.g48043ab
+pkgbase = zago-bin
+	pkgdesc = A Lean Terminal Forge for Markdown Writers (precompiled binary)
+	pkgver = 0.1.0.r20260802.2ccb517
 	pkgrel = 1
 	url = https://github.com/zonble/zago
 	arch = x86_64
-	arch = aarch64
 	license = MIT
-	makedepends = git
-	makedepends = swift
 	depends = gcc-libs
+	depends = glibc
 	provides = zago
 	conflicts = zago
-	source = git+https://github.com/zonble/zago.git
-	sha256sums = SKIP
+	source_x86_64 = https://github.com/cawa0505/aur-zago/releases/download/v0.1.0.r20260802.2ccb517/zago-linux-x86_64.tar.gz
+	sha256sums_x86_64 = 1bc813601e978943c8cef75acc3da72635eec24ce55d4040c18623811a21784c
 
-pkgname = zago-git
+pkgname = zago-bin
