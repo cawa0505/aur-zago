@@ -45,46 +45,18 @@ jobs:
             echo "new_release=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build zago binary in Arch Linux container
+      - name: Build zago binary in Swift container
         if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
-        uses: uraimo/run-on-arch-action@v2
-        id: build_binary
-        with:
-          arch: amd64
-          distro: archlinux_latest
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          setup: |
-            # No extra host setup needed
-          dockerRunArgs: |
-            --volume "${{ github.workspace }}:/workspace"
-          run: |
-            # 1. Install build dependencies in the clean Arch container
-            pacman -Syu --noconfirm
-            pacman -S --noconfirm base-devel git clang libxml2 curl ncurses
-            
-            # Link libraries that Swift expects in Arch
-            ln -sf /usr/lib/libncursesw.so.6 /usr/lib/libncurses.so.6
-            ln -sf /usr/lib/libxml2.so.2 /usr/lib/libxml2.so.2 || true
-
-            # 2. Download Swift toolchain directly
-            curl -O https://download.swift.org/swift-6.0.3-release/ubuntu2404/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-ubuntu24.04.tar.gz
-            tar -xzf swift-6.0.3-RELEASE-ubuntu24.04.tar.gz
-            export PATH="$(pwd)/swift-6.0.3-RELEASE-ubuntu24.04/usr/bin:${PATH}"
-
-            # 3. Clone and build zago upstream
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" swift:6.0-noble bash -c "
             git clone https://github.com/zonble/zago.git /tmp/zago
             cd /tmp/zago
-            
-            # Build statically linking the Swift runtime libraries to prevent any missing libswiftCore issues!
             swift build -c release --static-swift-stdlib
-
-            # 4. Packaging the compiled binary
-            cd .build/release
-            tar -czf /workspace/zago-linux-x86_64.tar.gz zago
-            
-            # Copy LICENSE and README for packaging
-            cp /tmp/zago/LICENSE /workspace/LICENSE
-            cp /tmp/zago/README.md /workspace/README.md
+            cp .build/release/zago /workspace/zago
+            cp LICENSE /workspace/LICENSE
+            cp README.md /workspace/README.md
+          "
+          tar -czf zago-linux-x86_64.tar.gz zago LICENSE README.md
 
       - name: Calculate SHA256 of the new binary
         if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
