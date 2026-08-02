@@ -1,0 +1,159 @@
+name: Build and Release zago-bin
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Every day at midnight
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout aur-zago repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest zago upstream version
+        id: upstream
+        run: |
+          # Fetch latest tag or commit from upstream
+          UPSTREAM_TAG=$(curl -s "https://api.github.com/repos/zonble/zago/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+          if [ -z "$UPSTREAM_TAG" ] || [ "$UPSTREAM_TAG" = "null" ]; then
+            # If no release, use commit count or latest commit
+            UPSTREAM_COMMIT=$(curl -s "https://api.github.com/repos/zonble/zago/commits/main" | grep '"sha":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
+            # We construct a synthetic version based on date and commit
+            COMMIT_DATE=$(curl -s "https://api.github.com/repos/zonble/zago/commits/main" | grep '"date":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' | cut -d'T' -f1 | tr -d '-')
+            UPSTREAM_VERSION="0.1.0.r${COMMIT_DATE}.${UPSTREAM_COMMIT:0:7}"
+          else
+            # Strip leading 'v' from tag if present
+            UPSTREAM_VERSION=$(echo "$UPSTREAM_TAG" | sed 's/^v//')
+          fi
+          echo "version=${UPSTREAM_VERSION}" >> $GITHUB_OUTPUT
+          echo "Upstream version identified: ${UPSTREAM_VERSION}"
+
+      - name: Check if version already released
+        id: check_rel
+        run: |
+          CURRENT_VERSION=$(grep "^pkgver=" PKGBUILD | cut -d'=' -f2)
+          echo "Current packaged version: ${CURRENT_VERSION}"
+          if [ "${{ steps.upstream.outputs.version }}" = "${CURRENT_VERSION}" ]; then
+            echo "No new version found. Skipping build."
+            echo "new_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "New version found! Proceeding with build."
+            echo "new_release=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build zago binary in Arch Linux container
+        if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
+        uses: uraimo/run-on-arch-action@v2
+        id: build_binary
+        with:
+          arch: amd64
+          distro: archlinux_latest
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          setup: |
+            # No extra host setup needed
+          dockerRunArgs: |
+            --volume "${{ github.workspace }}:/workspace"
+          run: |
+            # 1. Install build dependencies in the clean Arch container
+            pacman -Syu --noconfirm
+            pacman -S --noconfirm base-devel git clang libxml2 curl ncurses
+            
+            # Link libraries that Swift expects in Arch
+            ln -sf /usr/lib/libncursesw.so.6 /usr/lib/libncurses.so.6
+            ln -sf /usr/lib/libxml2.so.2 /usr/lib/libxml2.so.2 || true
+
+            # 2. Download Swift toolchain directly
+            curl -O https://download.swift.org/swift-6.0.3-release/ubuntu2404/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE-ubuntu24.04.tar.gz
+            tar -xzf swift-6.0.3-RELEASE-ubuntu24.04.tar.gz
+            export PATH="$(pwd)/swift-6.0.3-RELEASE-ubuntu24.04/usr/bin:${PATH}"
+
+            # 3. Clone and build zago upstream
+            git clone https://github.com/zonble/zago.git /tmp/zago
+            cd /tmp/zago
+            
+            # Build statically linking the Swift runtime libraries to prevent any missing libswiftCore issues!
+            swift build -c release --static-swift-stdlib
+
+            # 4. Packaging the compiled binary
+            cd .build/release
+            tar -czf /workspace/zago-linux-x86_64.tar.gz zago
+            
+            # Copy LICENSE and README for packaging
+            cp /tmp/zago/LICENSE /workspace/LICENSE
+            cp /tmp/zago/README.md /workspace/README.md
+
+      - name: Calculate SHA256 of the new binary
+        if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
+        id: calc_sha
+        run: |
+          SHA256=$(sha256sum zago-linux-x86_64.tar.gz | cut -d' ' -f1)
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+          echo "SHA256: ${SHA256}"
+
+      - name: Update PKGBUILD and .SRCINFO
+        if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          NEW_VER="${{ steps.upstream.outputs.version }}"
+          NEW_SHA="${{ steps.calc_sha.outputs.sha256 }}"
+          
+          # Update pkgver in PKGBUILD
+          sed -i "s/^pkgver=.*/pkgver=${NEW_VER}/" PKGBUILD
+          # Reset pkgrel to 1
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          # Update SHA256 sum
+          sed -i "s/sha256sums_x86_64=(.*/sha256sums_x86_64=('${NEW_SHA}')/" PKGBUILD
+
+          # Generate a clean .SRCINFO using makepkg (we run inside a docker container to avoid local system dependency of makepkg if needed, or simply via local system because ubuntu has no makepkg natively)
+          # Since makepkg is not installed on Ubuntu host, we can generate .SRCINFO using docker
+          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace archlinux:latest sh -c "pacman -Syu --noconfirm base-devel && sudo -u nobody makepkg --printsrcinfo > .SRCINFO"
+
+      - name: Create GitHub Release
+        if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.upstream.outputs.version }}
+          name: zago-bin v${{ steps.upstream.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            zago-linux-x86_64.tar.gz
+          body: |
+            Automated precompiled binary release for Arch Linux `zago-bin` package.
+            Upstream version/commit: ${{ steps.upstream.outputs.version }}
+            
+            This release was automatically compiled using Swift 6.0 in a clean Arch Linux container.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit and push changes to cawa0505/aur-zago
+        if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO LICENSE README.md
+          git commit -m "chore: release v${{ steps.upstream.outputs.version }}"
+          git push origin main
+
+      - name: Publish PKGBUILD to AUR
+        if: (steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch') && env.AUR_KEY != ''
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+          
+          # Clone the AUR repo, copy PKGBUILD and .SRCINFO, and push
+          git clone ssh://aur@aur.archlinux.org/zago-bin.git /tmp/aur-repo
+          cp PKGBUILD .SRCINFO /tmp/aur-repo/
+          cd /tmp/aur-repo
+          git config --global user.name "cawa0505"
+          git config --global user.email "cawa0505@gmail.com"
+          git add PKGBUILD .SRCINFO
+          git diff-index --quiet HEAD || git commit -m "Update to v${{ steps.upstream.outputs.version }}"
+          git push origin master
+        env:
+          AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
