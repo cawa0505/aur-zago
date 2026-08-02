@@ -30,3 +30,9 @@ To facilitate contributing back to the upstream repository (e.g., updating docum
    - `upstream`: Points directly to the official repository (`https://github.com/zonble/zago.git`) to pull latest updates.
 3. **PR Process**: All upstream contributions should be developed in `./upstream`, pushed to `origin`, and submitted as PRs to `upstream` via `gh pr create` from the `./upstream` working directory.
 
+## Security, Isolation & Documentation Boundaries
+
+1. **Ignored Files Guard**: Do not remove `AUR_SETUP.md` or other local setup/deployment guidelines from `.gitignore`. These files are private credentials-handling notes and MUST NOT be tracked by Git.
+2. **Documentation Cleanliness**: Public-facing documentation (such as `README.md`) must never link to, refer to, or mention gitignored setup files (`AUR_SETUP.md`) or local environment paths.
+
+
