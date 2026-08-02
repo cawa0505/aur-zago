@@ -85,6 +85,9 @@ jobs:
           # Generate a clean .SRCINFO using makepkg (we run inside a docker container to avoid local system dependency of makepkg if needed, or simply via local system because ubuntu has no makepkg natively)
           # Since makepkg is not installed on Ubuntu host, we can generate .SRCINFO using docker
           docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace archlinux:latest sh -c "pacman -Syu --noconfirm base-devel && chown -R nobody /workspace && sudo -u nobody makepkg --printsrcinfo > .SRCINFO"
+          
+          # Restore ownership of workspace back to the runner user
+          sudo chown -R $USER:$USER .
 
       - name: Create GitHub Release
         if: steps.check_rel.outputs.new_release == 'true' || github.event_name == 'workflow_dispatch'
