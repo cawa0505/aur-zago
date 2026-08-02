@@ -1,4 +1,4 @@
-# Maintainer: cawa0505 <cawa0505 at gmail dot com>
+# Maintainer: cawa0505 <zeng.tw at gmail dot com>
 pkgname=zago-bin
 _pkgname=zago
 pkgver=1.0.2

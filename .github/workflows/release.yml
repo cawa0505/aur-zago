@@ -128,7 +128,7 @@ jobs:
           cp PKGBUILD .SRCINFO /tmp/aur-repo/
           cd /tmp/aur-repo
           git config --global user.name "cawa0505"
-          git config --global user.email "cawa0505@gmail.com"
+          git config --global user.email "zeng.tw@gmail.com"
           git add PKGBUILD .SRCINFO
           git diff-index --quiet HEAD || git commit -m "Update to v${{ steps.upstream.outputs.version }}"
           git push origin master
