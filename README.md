@@ -7,29 +7,32 @@
 
 本倉庫僅用於打包維護與自動化 Release 發佈。所有關於 `zago` 軟體主程式、功能與商標版權皆歸原作者所有。
 
-## 📦 安裝方式
+> [!WARNING]
+> **目前尚未正式上架至 AUR**：由於 AUR 帳號與通道的自動化設定尚未完成對接（詳見 [AUR_SETUP.md](AUR_SETUP.md)），目前無法直接透過 `paru -S zago-bin` 或 `yay -S zago-bin` 安裝。在此期間，請依下方說明在本地端下載測試。
 
-你可以直接透過 AUR 助手安裝 `zago-bin`：
+## 📦 本地開發與手動安裝測試
+
+若要在本機手動測試、編譯或手動安裝此套件，建議直接 clone 至你的 AUR 助手（如 `paru` 或 `yay`）快取目錄中，這樣不僅方便測試，未來上架後也能無縫與 AUR 助手整合。
+
+### 使用 `paru` 路徑
 
 ```bash
-yay -S zago-bin
-```
+# Clone 至 paru 的套件快取目錄
+git clone https://github.com/cawa0505/aur-zago.git ~/.cache/paru/clone/zago-bin
+cd ~/.cache/paru/clone/zago-bin
 
-或手動下載並編譯安裝：
-
-```bash
-git clone https://aur.archlinux.org/zago-bin.git
-cd zago-bin
+# 本地編譯並安裝
 makepkg -si
 ```
 
-## 🛠️ 本地開發與測試
-
-若要在本機手動測試此打包腳本（PKGBUILD）：
+### 使用 `yay` 路徑
 
 ```bash
-git clone https://github.com/cawa0505/aur-zago.git
-cd aur-zago
+# Clone 至 yay 的快取目錄
+git clone https://github.com/cawa0505/aur-zago.git ~/.cache/yay/zago-bin
+cd ~/.cache/yay/zago-bin
+
+# 本地編譯並安裝
 makepkg -si
 ```
 
