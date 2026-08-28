@@ -1,6 +1,6 @@
 pkgbase = zago-bin
 	pkgdesc = A Lean Terminal Forge for Markdown Writers (precompiled binary)
-	pkgver = 1.4.2
+	pkgver = 1.4.4
 	pkgrel = 1
 	url = https://github.com/zonble/zago
 	arch = x86_64
@@ -9,7 +9,7 @@ pkgbase = zago-bin
 	depends = glibc
 	provides = zago
 	conflicts = zago
-	source_x86_64 = zago-1.4.2-linux-x86_64.tar.gz::https://github.com/cawa0505/aur-zago/releases/download/v1.4.2/zago-linux-x86_64.tar.gz
-	sha256sums_x86_64 = 1d198df006cb48decb49cdab872c0fb5fb99cdb717bb6ded852e7140537e0a15
+	source_x86_64 = zago-1.4.4-linux-x86_64.tar.gz::https://github.com/cawa0505/aur-zago/releases/download/v1.4.4/zago-linux-x86_64.tar.gz
+	sha256sums_x86_64 = 0c0afdd08b736b42052a33fa0a7982cede549d4620ca389ddbf0708368ce5743
 
 pkgname = zago-bin
