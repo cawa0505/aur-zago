@@ -1,7 +1,7 @@
 # Maintainer: cawa0505 <zeng.tw at gmail dot com>
 pkgname=zago-bin
 _pkgname=zago
-pkgver=1.4.6
+pkgver=1.5.1
 pkgrel=1
 pkgdesc="A Lean Terminal Forge for Markdown Writers (precompiled binary)"
 arch=('x86_64')
@@ -11,7 +11,7 @@ depends=('gcc-libs' 'glibc')
 provides=("$_pkgname")
 conflicts=("$_pkgname")
 source_x86_64=("$_pkgname-$pkgver-linux-x86_64.tar.gz::https://github.com/cawa0505/aur-zago/releases/download/v$pkgver/zago-linux-x86_64.tar.gz")
-sha256sums_x86_64=('66a8766f717c17fb28c54b0df7a5da6dac7254a599f06f9ed155b527486befdb')
+sha256sums_x86_64=('98b656f8c362ed39d3f3211b897797304af1df66cbbb0e3f9fa4f77f24d45f69')
 
 package() {
   install -Dm755 zago "$pkgdir/usr/bin/zago"
